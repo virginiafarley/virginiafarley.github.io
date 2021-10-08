@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+    <head>
+        <title id="title">iOS 15.1 blank video on app switch sample</title>
+        <link rel="manifest" href="manifest.json" crossorigin="use-credentials" />
+        <link rel="stylesheet" type="text/css" href="css/styles.css" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1"
+        />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-title" content="Sample" />
+    </head>
+
+    <body>
+        <div id="instructions" class="split">
+            <ol type="1">
+                <li>Create PWA</li>
+                <li>Click 'Capture canvas'</li>
+                <li>Click 'Capture audio'</li>
+                <li>Grant mic permission</li>
+                <li>If video does not autoplay, click 'Play video'</li>
+                <li>Background app for 5-10 seconds</li>
+                <li>Return to app</li>
+                <li>Observe paused state</li>
+                <li>Click 'Play video'</li>
+                <li>Observe blank video (BUG)</li>
+                <li>Observe audio resume</li>
+                <li>Observe playing state</li>
+                <li>Click 'Reset source'</li>
+                <li>Observe video resume</li>
+              </ol>
+        </div>
+        <div id="content" class="split">
+            <button id="capture" onclick=captureCanvas()>Capture canvas</button>
+            <button id="audio" onclick=captureAudio()>Capture audio</button>
+            <button id="play" onclick=play()>Play video</button>
+            <button id="reset" onclick=reset()>Reset source</button>
+            <div id="labeled-canvas" class="labeled">
+                <label id="canvaslabel" for="canvas">Canvas</label>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div id="labeled-video" class="labeled">
+                <label id="videolabel" for="video">Video - state: </label>
+                <video id="video" playsinline autoplay></video>
+            </div>
+        </div>
+    </body>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const video = document.getElementById("video");
+        const stream = new MediaStream();
+        video.srcObject = stream;
+
+        video.onpause = function () {
+            videoStateChange("paused")
+        };
+        video.onplay = function () {
+            videoStateChange("playing")
+        };
+        videoStateChange(video.paused ? "paused" : "playing");
+
+        window.setTimeout(drawFirst, 500);
+
+        function drawFirst() {
+            ctx.fillStyle = "Green";
+            ctx.fillRect(10, 10, 10, 50);
+            ctx.fillStyle = "Red";
+            ctx.fillRect(60, 10, 10, 50);
+            
+            window.setTimeout(drawSecond, 500);
+        }
+
+        function drawSecond() {
+            ctx.fillStyle = "Red";
+            ctx.fillRect(10, 10, 10, 50);
+            ctx.fillStyle = "Green";
+            ctx.fillRect(60, 10, 10, 50);
+
+            window.setTimeout(drawFirst, 500);
+        }
+
+        function videoStateChange(state) {
+            document.getElementById("videolabel").innerHTML = "Video - state: " + state;
+        }
+
+        function captureCanvas() {
+            const videoStream = canvas.captureStream();
+            if (stream.getVideoTracks().length > 0) {
+                console.log("video already capturing");
+            } else {
+                for(const track of videoStream.getVideoTracks()) {
+                    stream.addTrack(track);
+                }
+                console.log("adding video tracks to audio stream");
+            }
+
+            document.getElementById("capture").disabled = true;
+        }
+
+        function captureAudio() {
+            if (!navigator.mediaDevices) {
+                console.log("audio capture not supported");
+                return;
+            }
+            navigator.mediaDevices
+                .getUserMedia({
+                    audio: true,
+                    video: false
+                })
+                .then((audioStream) => {
+                    if (stream.getAudioTracks().length > 0) {
+                        console.log("audio already capturing");
+                    } else {
+                        for(const track of audioStream.getAudioTracks()) {
+                            stream.addTrack(track);
+                        }
+                        console.log("adding audio tracks to video stream");
+                    }
+
+                    document.getElementById("audio").disabled = true;
+                })
+                .catch(e => {
+                    console.log("recording audio failed");
+                });
+        }
+
+        function play() {
+            video.play();
+        }
+
+        function reset() {
+            video.srcObject = null;
+            video.srcObject = stream;
+            video.play();
+        }
+    </script>
+</html>
