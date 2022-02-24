@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+  <head>
+    <title id="title">iOS 15.4 visibilitychange mic disabled example</title>
+    <link rel="manifest" href="manifest.json" crossorigin="use-credentials" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Sample" />
+  </head>
+
+  <body>
+    <div id="instructions" class="split">
+      <ol type="1">
+        <li>Create PWA</li>
+        <li>Grant mic permission - Allow</li>
+        <li>Click 'Capture audio'</li>
+        <li>Navigate away from the app</li>
+        <li>Bring app back to foreground</li>
+        <li>Observe that mic is now disabled</li>
+      </ol>
+    </div>
+    <div id="content" class="split">
+      <button id="audio" onclick="captureAudio()">Capture audio</button>
+    </div>
+  </body>
+
+  <script>
+    function captureAudio() {
+      if (!navigator.mediaDevices) {
+        console.log("audio capture not supported");
+        return;
+      }
+      navigator.mediaDevices
+        .getUserMedia({
+          audio: true,
+          video: false,
+        })
+        .then((audioStream) => {
+          for (const track of audioStream.getAudioTracks()) {
+            console.log("received audio track");
+
+            track.onended = (evt) => {
+              console.log("track ended");
+              console.log()
+            };
+          }
+        })
+        .catch((err) => {
+          console.log("recording audio failed: " + err);
+        });
+    }
+
+    document.onvisibilitychange = () => {
+      console.log("visibilitychange: " + document.visibilityState);
+    };
+  </script>
+</html>
